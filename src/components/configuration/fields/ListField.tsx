@@ -18,15 +18,16 @@ export function ListField({
   const listRef = useRef<HTMLDivElement>(null);
   const focusLastRef = useRef(false);
 
-  // useLayoutEffect runs synchronously after DOM mutation but before paint,
-  // so focus happens instantly with no visible flash to another element.
+  // Dep on values.length ensures this only fires when an item is actually
+  // committed, not on intermediate renders from startTransition that would
+  // otherwise consume focusLastRef before the new input appears in the DOM.
   useLayoutEffect(() => {
     if (focusLastRef.current) {
       focusLastRef.current = false;
       const items = listRef.current?.querySelectorAll<HTMLElement>('input, select');
       items?.[items.length - 1]?.focus();
     }
-  });
+  }, [values.length]);
 
   const resolvedPlaceholder = placeholder ?? localize('com_ui_enter_value');
   const resolvedItemLabel = itemLabel ?? localize('com_ui_item');

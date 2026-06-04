@@ -63,7 +63,12 @@ export function ConfigTabContent({
       if (editedValues[path] === undefined) return schemaDefaults?.[path] ?? fallback;
       return editedValues[path];
     }
-    if (resolvedValues && path in resolvedValues) {
+    // If any child path has been edited (e.g. modelSpecs.list.0 when asking for
+    // modelSpecs.list), resolvedValues holds the stale pre-edit value — skip it
+    // and use fallback (activeConfigValues) which already has merged indexed edits.
+    const prefix = `${path}.`;
+    const hasChildEdit = Object.keys(editedValues).some((k) => k.startsWith(prefix));
+    if (!hasChildEdit && resolvedValues && path in resolvedValues) {
       return resolvedValues[path];
     }
     return fallback;
