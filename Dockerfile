@@ -5,6 +5,7 @@ WORKDIR /app
 # --- Install ---
 FROM base AS deps
 COPY package.json bun.lock .npmrc ./
+COPY librechat-data-provider-0.8.502.tgz ./
 COPY patches/ patches/
 COPY tools/ tools/
 RUN bun install --frozen-lockfile
@@ -19,6 +20,7 @@ RUN bun run build
 # --- Production dependencies (patches applied, then devDeps stripped) ---
 FROM base AS prod-deps
 COPY package.json bun.lock .npmrc ./
+COPY librechat-data-provider-0.8.502.tgz ./
 COPY patches/ patches/
 COPY tools/ tools/
 RUN bun install --frozen-lockfile \
