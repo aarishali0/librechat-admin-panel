@@ -22,6 +22,7 @@ const PERMISSION_TYPE_ORDER: PermissionTypes[] = [
   PermissionTypes.FILE_CITATIONS,
   PermissionTypes.PEOPLE_PICKER,
   PermissionTypes.MARKETPLACE,
+  PermissionTypes.SIDEBAR_LAYOUT,
 ];
 
 const multiPermTypes = PERMISSION_TYPE_ORDER.filter((pt) => PERMISSION_TYPE_SCHEMA[pt].length > 1);
