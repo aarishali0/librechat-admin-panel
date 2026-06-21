@@ -5,7 +5,13 @@ import { useRouter } from '@tanstack/react-router';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Alert, Title, Panel, Button, Separator, TextField, Container } from '@clickhouse/click-ui';
 import type * as t from '@/types';
-import { adminLoginFn, adminVerify2FAFn, openIdCheckOptions, openidLoginFn } from '@/server';
+import {
+  adminLoginFn,
+  adminVerify2FAFn,
+  adminSutraLoginFn,
+  openIdCheckOptions,
+  openidLoginFn,
+} from '@/server';
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from './InputOTP';
 import { PasswordInput } from './PasswordInput';
 import { useLocalize } from '@/hooks';
@@ -27,6 +33,7 @@ export function AuthCard({
   const [ssoLoading, setSsoLoading] = useState(false);
   const [autoRedirectFailed, setAutoRedirectFailed] = useState(false);
   const autoRedirectAttempted = useRef(false);
+  const sutraAttempted = useRef(false);
 
   const [tempToken, setTempToken] = useState('');
   const [totpCode, setTotpCode] = useState('');
@@ -49,6 +56,16 @@ export function AuthCard({
     const timeout = setTimeout(() => setAnnouncement(''), 4000);
     return () => clearTimeout(timeout);
   }, [generalError, errors.email, errors.password]);
+
+  useEffect(() => {
+    if (sutraAttempted.current) return;
+    sutraAttempted.current = true;
+    adminSutraLoginFn().then((result) => {
+      if (!result.error) {
+        router.invalidate().then(() => router.navigate({ to: redirectTo }));
+      }
+    });
+  }, [redirectTo, router]);
 
   useEffect(() => {
     if (!autoRedirectSso || autoRedirectAttempted.current) return;

@@ -320,6 +320,46 @@ export const getCurrentUserFn = createServerFn({ method: 'GET' }).handler(async 
   };
 });
 
+/**
+ * Auto-login via Sutra cookie forwarding.
+ * Reads the browser's authToken cookie (set by Sutra app), forwards it to
+ * LibreChat's /api/auth/session, and creates an admin session on success.
+ */
+export const adminSutraLoginFn = createServerFn({ method: 'GET' }).handler(async () => {
+  const cookieHeader = getRequestHeader('cookie');
+  if (!cookieHeader) return { error: true, message: 'No session' };
+
+  try {
+    const response = await fetch(`${getServerApiUrl()}/api/auth/session`, {
+      headers: { Cookie: cookieHeader },
+    });
+
+    const text = await response.text();
+    if (!text) return { error: true, message: 'No Sutra session' };
+
+    const data = JSON.parse(text) as { token: string; user: t.SerializableUser };
+    if (!data.token || !data.user) return { error: true, message: 'No Sutra session' };
+
+    if (data.user.role !== SystemRoles.ADMIN) {
+      return { error: true, message: 'Not an admin' };
+    }
+
+    const now = Date.now();
+    const session = await useAppSession();
+    await session.update({
+      user: data.user,
+      token: data.token,
+      tokenProvider: 'librechat',
+      lastVerified: now,
+      lastActivity: now,
+    });
+
+    return { error: false, user: data.user };
+  } catch {
+    return { error: true, message: 'Sutra auth failed' };
+  }
+});
+
 /** Shared queryOptions so consumers deduplicate the OpenID availability check. */
 export const openIdCheckOptions = queryOptions({
   queryKey: ['openIdCheck'],
