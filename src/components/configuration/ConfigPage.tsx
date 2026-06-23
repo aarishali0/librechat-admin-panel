@@ -1,3 +1,4 @@
+import yaml from 'js-yaml';
 import { createPortal } from 'react-dom';
 import { Icon } from '@clickhouse/click-ui';
 import { PrincipalType } from 'librechat-data-provider';
@@ -602,6 +603,18 @@ export function ConfigPage({ initialTab, highlightField, initialScope }: t.Confi
     [isEditingScope, editingScope, importMutation, showImportSuccess, handleImportAsProfile],
   );
 
+  const handleExport = useCallback(() => {
+    const source = dbOverrides && Object.keys(dbOverrides).length > 0 ? dbOverrides : configValues;
+    const yamlStr = yaml.dump(source ?? {}, { lineWidth: -1, noRefs: true });
+    const blob = new Blob([yamlStr], { type: 'application/x-yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'librechat.yaml';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [dbOverrides, configValues]);
+
   const highlightRef = useHighlightRef(highlightField);
   const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
   const [tocEl, setTocEl] = useState<HTMLElement | null>(null);
@@ -777,6 +790,7 @@ export function ConfigPage({ initialTab, highlightField, initialScope }: t.Confi
               : undefined
           }
           onImportClick={() => setImportOpen(true)}
+          onExportClick={handleExport}
           showScope={permissions.canView}
           scopeSelection={selectedScope}
           onScopeClick={() => setScopeSelectorOpen(true)}
@@ -916,6 +930,7 @@ function HeaderActions({
   importDisabled,
   importTitle,
   onImportClick,
+  onExportClick,
   showScope,
   scopeSelection,
   onScopeClick,
@@ -924,6 +939,7 @@ function HeaderActions({
   importDisabled: boolean;
   importTitle?: string;
   onImportClick: () => void;
+  onExportClick: () => void;
   showScope: boolean;
   scopeSelection: t.ScopeSelection;
   onScopeClick: () => void;
@@ -935,22 +951,33 @@ function HeaderActions({
     setPortalTarget(document.getElementById('header-actions-portal'));
   }, []);
 
+  const btnClass =
+    'flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-(--cui-color-stroke-default) bg-transparent px-3 py-1.5 text-sm text-(--cui-color-text-default) transition-colors hover:bg-(--cui-color-background-hover) disabled:cursor-not-allowed disabled:opacity-50';
+
   const content = (
     <>
       {showImport && (
-        <button
-          type="button"
-          onClick={onImportClick}
-          disabled={importDisabled}
-          aria-disabled={importDisabled || undefined}
-          title={importTitle}
-          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-(--cui-color-stroke-default) bg-transparent px-3 py-1.5 text-sm text-(--cui-color-text-default) transition-colors hover:bg-(--cui-color-background-hover) disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <span aria-hidden="true">
-            <Icon name="upload" size="xs" />
-          </span>
-          {localize('com_config_import_yaml')}
-        </button>
+        <>
+          <button type="button" onClick={onExportClick} className={btnClass}>
+            <span aria-hidden="true">
+              <Icon name="download" size="xs" />
+            </span>
+            {localize('com_config_export_yaml')}
+          </button>
+          <button
+            type="button"
+            onClick={onImportClick}
+            disabled={importDisabled}
+            aria-disabled={importDisabled || undefined}
+            title={importTitle}
+            className={btnClass}
+          >
+            <span aria-hidden="true">
+              <Icon name="upload" size="xs" />
+            </span>
+            {localize('com_config_import_yaml')}
+          </button>
+        </>
       )}
       {showScope && <ScopeTriggerButton currentSelection={scopeSelection} onClick={onScopeClick} />}
     </>
